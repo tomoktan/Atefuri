@@ -4,39 +4,29 @@
               android:layout_height="match_parent"
               android:orientation="vertical"
               tools:context=".MainActivity">
-    <TextView
-        android:id="@+id/start_time"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-    <TextView
-        android:id="@+id/current_position"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="00:00/00:00"/>
     <Button
-        android:id="@+id/trumpet_mode"
+        android:id="@+id/guitar_mode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="トランペット"
-        android:onClick="changeMode"/>
+        android:text="ギター"
+        android:onClick="selectMode"/>
     <Button
         android:id="@+id/keyboard_mode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="キーボード"
-        android:onClick="changeMode"/>
+        android:onClick="selectMode"/>
     <Button
         android:id="@+id/drum_mode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="ドラム"
-        android:onClick="changeMode"/>
+        android:onClick="selectMode"/>
     <Button
-        android:id="@+id/play"
-        android:layout_width="match_parent"
+        android:id="@+id/bass_mode"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:text="Play"
-        android:onClick="play"/>
+        android:text="ベース"
+        android:onClick="selectMode"/>
 
 </LinearLayout>
