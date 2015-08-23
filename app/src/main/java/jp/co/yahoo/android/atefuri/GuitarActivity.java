@@ -33,10 +33,12 @@ public class GuitarActivity extends Activity implements SensorEventListener {
     private MediaPlayer mediaPlayer;
     private SensorManager sensorManager;
     private AudioManager audioManager;
+    private TickHandler monitorHandler;
     private ScheduledExecutorService scheduledExecutorService;
 
     private int mode;
     private int maxVolume;
+    private int currentVolume;
 
     private float x;
 
@@ -46,6 +48,8 @@ public class GuitarActivity extends Activity implements SensorEventListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_guitar);
+
+        this.currentVolume = 0;
 
         sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
@@ -67,10 +71,11 @@ public class GuitarActivity extends Activity implements SensorEventListener {
         try{
             this.mediaPlayer.prepare();
             this.mediaPlayer.setLooping(true);
-        }catch( Exception e ){
-        }
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        }catch( Exception e ){}
 
+        this.monitorHandler = new TickHandler(this.mediaPlayer, this.currentPositionTextView);
+
+        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
         this.scheduledExecutorService.scheduleWithFixedDelay(
                 new Runnable() {
                     @Override
@@ -97,6 +102,7 @@ public class GuitarActivity extends Activity implements SensorEventListener {
     @Override
     protected void onStop() {
         super.onStop();
+        this.monitorHandler.stop();
         this.monitorHandler=null;
         this.scheduledExecutorService = null;
         sensorManager.unregisterListener(this);
@@ -107,10 +113,6 @@ public class GuitarActivity extends Activity implements SensorEventListener {
     }
 
     public void play(View view) {
-        try {
-            Thread.sleep(1000); //1000ミリ秒Sleepする
-        } catch (InterruptedException e) {
-        }
 
         if (this.mediaPlayer.isPlaying()) {
             this.mediaPlayer.pause();
@@ -121,58 +123,22 @@ public class GuitarActivity extends Activity implements SensorEventListener {
         }
     }
 
-    private Handler monitorHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            try {
-                if (mediaPlayer.isPlaying()) {
-                    int duration = mediaPlayer.getDuration();
-                    int currentPosition = mediaPlayer.getCurrentPosition();
-
-                    String durationTime = timeText(duration);
-                    String currentTime = timeText(currentPosition);
-                    currentPositionTextView.setText(currentTime + "/" + durationTime);
-                } else {
-                    currentPositionTextView.setText("00:00/00:00");
-                }
-            } catch (NullPointerException e) {}
-            if (this != null) this.sleep(100);
-
-        }
-
-        public void sleep(long delayMills) {
-            removeMessages(0);
-            sendMessageDelayed(obtainMessage(0), delayMills);
-        }
-
-        public String timeText(int time) {
-            int m = (int)(time / 60000);
-            int s = (int)(time % 60000 / 1000);
-
-            String str = "00:00";
-            if (m > 10 && s > 10) str = "" + m + ":" + s;
-            else if (m < 10 && s >= 10) str = "0" + m + ":" + s;
-            else if (m >= 10 && s < 10) str = "" + m + ":" + "0" + s;
-            else if (m < 10 && s < 10) str = "0" + m + ":" + "0" + s;
-
-            return str;
-        }
-    };
-
     @Override
     public void onSensorChanged(SensorEvent event) {
         this.x = event.values[0];
         if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
-            if(this.x > 15 || this.x < -15) {
+            if(this.currentVolume == 0 && (this.x > 15 || this.x < -15)) {
                 count = 0; // 停止カウントをリセット
-                Log.i(TAG, "Play");
+                Log.i(TAG, "Play : " + this.currentVolume);
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
-            } else if (this.x < 10 && this.x > -10) {
+                this.currentVolume = this.maxVolume;
+            } else if (this.currentVolume == this.maxVolume && (this.x < 10 && this.x > -10)) {
                 count++;
                 if (count >= 5) { // 再生カウントが溜まったらミュート
-                    Log.i(TAG, "Stop");
+                    Log.i(TAG, "Stop : " + this.currentVolume);
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+                    this.currentVolume = 0;
                     count = 0;
                 }
             }
