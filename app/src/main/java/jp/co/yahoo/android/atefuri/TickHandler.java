@@ -28,10 +28,10 @@ public class TickHandler extends Handler {
             if (mp.isPlaying()) {
                 int duration = mp.getDuration();
                 int currentPosition = mp.getCurrentPosition();
-
                 String durationTime = timeText(duration);
                 String currentTime = timeText(currentPosition);
-                textView.setText(currentTime + "/" + durationTime);
+                Log.i("TickHandler", Integer.toString(mp.getCurrentPosition()));
+                textView.setText(currentTime + "/" + durationTime, TextView.BufferType.EDITABLE);
             } else {
                 textView.setText("00:00/00:00");
             }

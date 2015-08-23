@@ -10,28 +10,31 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".DrumActivity"
-            android:label="@string/title_activity_drum" >
+            android:label="@string/title_activity_drum"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name=".GuitarActivity"
-            android:label="@string/title_activity_guitar" >
+            android:label="@string/title_activity_guitar"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name=".KeyboardActivity"
-            android:label="@string/title_activity_keyboard" >
+            android:label="@string/title_activity_keyboard"
+            android:screenOrientation="portrait">
         </activity>
         <activity
             android:name=".BassActivity"
-            android:label="@string/title_activity_bass" >
+            android:label="@string/title_activity_bass"
+            android:screenOrientation="portrait">
         </activity>
     </application>
 

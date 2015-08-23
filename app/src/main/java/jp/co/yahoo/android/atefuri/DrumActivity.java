@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -15,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -34,13 +36,23 @@ public class DrumActivity extends Activity implements SensorEventListener {
     private TickHandler monitorHandler;
     private ScheduledExecutorService scheduledExecutorService;
 
+    private SoundPool soundPool;
+    private int soundId;
 
-    private int mode;
     private int maxVolume;
+    private int currentVolume = 0;
+
+    private long oldClimaxMillis = 0;
+    private long climaxMillis = 0;
+    private int climaxCount = 0;
+    private long climaxTimeMillis = 0;
 
     private float x;
 
     private int count = 0;
+
+    private long playTimeMillis;
+    private long currentTimeMillis;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +88,9 @@ public class DrumActivity extends Activity implements SensorEventListener {
                 new Runnable(){
                     @Override
                     public void run() {
-                        monitorHandler.sendMessage(monitorHandler.obtainMessage());
+                        if(!isFinishing() && mediaPlayer.isPlaying()) {
+                            monitorHandler.sendMessage(monitorHandler.obtainMessage());
+                        }
                     }},
                 200, //initialDelay
                 200, //delay
@@ -92,6 +106,9 @@ public class DrumActivity extends Activity implements SensorEventListener {
             sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI);
         }
 
+        // 予め音声データを読み込む
+        this.soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+        this.soundId = this.soundPool.load(getApplicationContext(), R.raw.climax, 0);
     }
 
     @Override
@@ -115,6 +132,8 @@ public class DrumActivity extends Activity implements SensorEventListener {
         } else {
             this.mediaPlayer.start();
             this.playButton.setText("Stop");
+            Toast.makeText(this, "盛り上がってきたー", Toast.LENGTH_SHORT).show();
+            this.soundPool.play(this.soundId, 1.0F, 1.0F, 0, 0, 1.0F);
         }
     }
 
@@ -123,15 +142,42 @@ public class DrumActivity extends Activity implements SensorEventListener {
         this.x = event.values[0];
         if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
+            if(this.x > 19 || this.x < -19) {
+                this.oldClimaxMillis = this.climaxMillis;
+                this.climaxMillis = System.currentTimeMillis();
+
+                if ((this.climaxMillis - this.oldClimaxMillis) < 100) {
+                    if (++climaxCount > 10) {
+                        if(System.currentTimeMillis() - this.climaxTimeMillis > 4000) {
+                            Toast.makeText(this, "盛り上がってきたー", Toast.LENGTH_SHORT).show();
+                            this.soundPool.play(this.soundId, 1.0F, 1.0F, 0, 0, 1.0F);
+                            this.climaxTimeMillis = System.currentTimeMillis();
+                            climaxCount = 0;
+                        }
+                    }
+                } else {
+                    climaxCount = 0;
+                }
+            }
+            if(climaxCount > 10) {
+                climaxCount = 0;
+            }
+            Log.i("climax", Integer.toString(climaxCount));
+
+
             if(this.x > 15 || this.x < -15) {
                 count = 0; // 停止カウントをリセット
-                Log.i(TAG, "Play");
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
+                if(this.currentVolume == 0) {
+                    Log.i(TAG, "Play");
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
+                    this.currentVolume = this.maxVolume;
+                }
             } else if (this.x < 10 && this.x > -10) {
                 count++;
-                if (count >= 5) { // 再生カウントが溜まったらミュート
+                if (count >= 5 && this.currentVolume == this.maxVolume) { // 再生カウントが溜まったらミュート
                     Log.i(TAG, "Stop");
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+                    this.currentVolume = 0;
                     count = 0;
                 }
             }

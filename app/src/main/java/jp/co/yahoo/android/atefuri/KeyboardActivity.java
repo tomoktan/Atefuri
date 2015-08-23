@@ -25,7 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class KeyboardActivity extends Activity implements SensorEventListener {
+public class KeyboardActivity extends Activity {
 
     private final static String TAG = "tomoktan";
 
@@ -38,8 +38,8 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
     private TickHandler monitorHandler;
     private ScheduledExecutorService scheduledExecutorService;
 
-    private int mode;
     private int maxVolume;
+    private int currentVolume = 0;
     private long touchUpTime;
     private boolean tapFlag = false;
 
@@ -81,7 +81,7 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
                 new Runnable(){
                     @Override
                     public void run() {
-                        if(!isFinishing()) {
+                        if(!isFinishing() && mediaPlayer.isPlaying()) {
                             long time = System.currentTimeMillis();
 
                             if (tapFlag == true && (time - touchUpTime) > 1000) {
@@ -99,12 +99,6 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
-        List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-        if(sensorList.size() > 0) {
-            Sensor sensor = sensorList.get(0);
-            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI);
-        }
-
     }
 
     @Override
@@ -113,7 +107,6 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
         this.monitorHandler.stop();
         this.monitorHandler=null;
         this.scheduledExecutorService.shutdown();
-        sensorManager.unregisterListener(this);
         if (this.mediaPlayer != null) {
             this.mediaPlayer.release();
             this.mediaPlayer = null;
@@ -130,30 +123,6 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
             this.playButton.setText("Stop");
         }
     }
-    
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        /*
-        this.x = event.values[0];
-        if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-
-            if(this.x > 15 || this.x < -15) {
-                count = 0; // 停止カウントをリセット
-                //Log.i(TAG, "Play");
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
-            } else if (this.x < 10 && this.x > -10) {
-                count++;
-                if (count >= 5) { // 再生カウントが溜まったらミュート
-                    //Log.i(TAG, "Stop");
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
-                    count = 0;
-                }
-            }
-            //Log.v(TAG, Float.toString(this.x));
-        }
-    */
-    }
-
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
@@ -175,11 +144,5 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
             }
         }
         return true;
-    }
-
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
     }
 }
