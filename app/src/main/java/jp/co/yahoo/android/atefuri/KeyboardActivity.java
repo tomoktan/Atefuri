@@ -17,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.view.MotionEvent;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -37,6 +38,8 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
 
     private int mode;
     private int maxVolume;
+    private long touchUpTime;
+    private boolean tapFlag = false;
 
     private float x;
 
@@ -124,6 +127,13 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
         @Override
         public void handleMessage(Message msg) {
             try {
+                long time = System.currentTimeMillis();
+
+                if (tapFlag == true && (time - touchUpTime) > 1000) {
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+                    tapFlag = false;
+                }
+
                 if (mediaPlayer.isPlaying()) {
                     int duration = mediaPlayer.getDuration();
                     int currentPosition = mediaPlayer.getCurrentPosition();
@@ -131,6 +141,7 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
                     String durationTime = timeText(duration);
                     String currentTime = timeText(currentPosition);
                     currentPositionTextView.setText(currentTime + "/" + durationTime);
+
                 } else {
                     currentPositionTextView.setText("00:00/00:00");
                 }
@@ -160,25 +171,50 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        /*
         this.x = event.values[0];
         if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
             if(this.x > 15 || this.x < -15) {
                 count = 0; // 停止カウントをリセット
-                Log.i(TAG, "Play");
+                //Log.i(TAG, "Play");
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
             } else if (this.x < 10 && this.x > -10) {
                 count++;
                 if (count >= 5) { // 再生カウントが溜まったらミュート
-                    Log.i(TAG, "Stop");
+                    //Log.i(TAG, "Stop");
                     audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
                     count = 0;
                 }
             }
-            Log.v(TAG, Float.toString(this.x));
+            //Log.v(TAG, Float.toString(this.x));
         }
-
+    */
     }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        Log.d("pressure", "hoge=" + event.getPressure());
+
+        if (mediaPlayer.isPlaying()) {
+            if (tapFlag == false) {
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
+                tapFlag = true;
+            }
+
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+
+                Log.d("TouchEventAction", "ac:" + event.getAction());
+                Log.d("TouchDownTime", "dt:" + event.getDownTime());
+                Log.d("TouchEventTime", "et" + event.getEventTime());
+
+                touchUpTime = System.currentTimeMillis();
+            }
+        }
+        return true;
+    }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
