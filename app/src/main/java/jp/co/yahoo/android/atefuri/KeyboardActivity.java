@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class KeyboardActivity extends Activity implements SensorEventListener {
@@ -34,6 +35,7 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
     private MediaPlayer mediaPlayer;
     private SensorManager sensorManager;
     private AudioManager audioManager;
+    private TickHandler monitorHandler;
     private ScheduledExecutorService scheduledExecutorService;
 
     private int mode;
@@ -70,15 +72,24 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
         try{
             this.mediaPlayer.prepare();
             this.mediaPlayer.setLooping(true);
-        }catch( Exception e ){
-        }
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        }catch( Exception e ){}
 
+        this.monitorHandler = new TickHandler(this.mediaPlayer, this.currentPositionTextView);
+
+        this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         this.scheduledExecutorService.scheduleWithFixedDelay(
                 new Runnable(){
                     @Override
                     public void run() {
-                        monitorHandler.sendMessage(monitorHandler.obtainMessage());
+                        if(!isFinishing()) {
+                            long time = System.currentTimeMillis();
+
+                            if (tapFlag == true && (time - touchUpTime) > 1000) {
+                                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
+                                tapFlag = false;
+                            }
+                            monitorHandler.sendMessage(monitorHandler.obtainMessage());
+                        }
                     }},
                 200, //initialDelay
                 200, //delay
@@ -99,8 +110,9 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
     @Override
     protected void onStop() {
         super.onStop();
+        this.monitorHandler.stop();
         this.monitorHandler=null;
-        this.scheduledExecutorService = null;
+        this.scheduledExecutorService.shutdown();
         sensorManager.unregisterListener(this);
         if (this.mediaPlayer != null) {
             this.mediaPlayer.release();
@@ -109,10 +121,6 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
     }
 
     public void play(View view) {
-        try {
-            Thread.sleep(1000); //1000ミリ秒Sleepする
-        } catch (InterruptedException e) {
-        }
 
         if (this.mediaPlayer.isPlaying()) {
             this.mediaPlayer.pause();
@@ -122,53 +130,7 @@ public class KeyboardActivity extends Activity implements SensorEventListener {
             this.playButton.setText("Stop");
         }
     }
-
-    private Handler monitorHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            try {
-                long time = System.currentTimeMillis();
-
-                if (tapFlag == true && (time - touchUpTime) > 1000) {
-                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0);
-                    tapFlag = false;
-                }
-
-                if (mediaPlayer.isPlaying()) {
-                    int duration = mediaPlayer.getDuration();
-                    int currentPosition = mediaPlayer.getCurrentPosition();
-
-                    String durationTime = timeText(duration);
-                    String currentTime = timeText(currentPosition);
-                    currentPositionTextView.setText(currentTime + "/" + durationTime);
-
-                } else {
-                    currentPositionTextView.setText("00:00/00:00");
-                }
-            } catch (NullPointerException e) {}
-            if (this != null) this.sleep(100);
-
-        }
-
-        public void sleep(long delayMills) {
-            removeMessages(0);
-            sendMessageDelayed(obtainMessage(0), delayMills);
-        }
-
-        public String timeText(int time) {
-            int m = (int)(time / 60000);
-            int s = (int)(time % 60000 / 1000);
-
-            String str = "00:00";
-            if (m > 10 && s > 10) str = "" + m + ":" + s;
-            else if (m < 10 && s >= 10) str = "0" + m + ":" + s;
-            else if (m >= 10 && s < 10) str = "" + m + ":" + "0" + s;
-            else if (m < 10 && s < 10) str = "0" + m + ":" + "0" + s;
-
-            return str;
-        }
-    };
-
+    
     @Override
     public void onSensorChanged(SensorEvent event) {
         /*
