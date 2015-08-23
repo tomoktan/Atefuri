@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Atefuri</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_drum">DrumActivity</string>
+    <string name="title_activity_guitar">GuitarActivity</string>
+    <string name="title_activity_keyboard">KeyboardActivity</string>
+    <string name="title_activity_bass">BassActivity</string>
+</resources>
