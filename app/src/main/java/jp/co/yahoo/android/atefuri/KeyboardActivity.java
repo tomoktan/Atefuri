@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -37,6 +38,10 @@ public class KeyboardActivity extends Activity {
     private AudioManager audioManager;
     private TickHandler monitorHandler;
     private ScheduledExecutorService scheduledExecutorService;
+
+    private SoundPool tuneSoundPool;
+    private int tuneSoundId;
+    private long tuneMillis = 0;
 
     private int maxVolume;
     private int currentVolume = 0;
@@ -99,6 +104,9 @@ public class KeyboardActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+
+        this.tuneSoundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+        this.tuneSoundId = this.tuneSoundPool.load(getApplicationContext(), R.raw.keyboard_tune, 0);
     }
 
     @Override
@@ -116,8 +124,8 @@ public class KeyboardActivity extends Activity {
     public void play(View view) {
 
         if (this.mediaPlayer.isPlaying()) {
-            this.mediaPlayer.pause();
-            this.playButton.setText("Play");
+            // this.mediaPlayer.pause();
+            // this.playButton.setText("Play");
         } else {
             this.mediaPlayer.start();
             this.playButton.setText("Stop");
@@ -127,10 +135,9 @@ public class KeyboardActivity extends Activity {
     public boolean onTouchEvent(MotionEvent event) {
 
         Log.d("pressure", "hoge=" + event.getPressure());
-
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
         if (mediaPlayer.isPlaying()) {
             if (tapFlag == false) {
-                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (int) (this.maxVolume), 0);
                 tapFlag = true;
             }
 
@@ -141,6 +148,11 @@ public class KeyboardActivity extends Activity {
                 Log.d("TouchEventTime", "et" + event.getEventTime());
 
                 touchUpTime = System.currentTimeMillis();
+            }
+        } else {
+            if (System.currentTimeMillis() - this.tuneMillis > 4000) {
+                this.tuneSoundPool.play(this.tuneSoundId, 1.0F, 1.0F, 0, 0, 1.0F);
+                this.tuneMillis = System.currentTimeMillis();
             }
         }
         return true;

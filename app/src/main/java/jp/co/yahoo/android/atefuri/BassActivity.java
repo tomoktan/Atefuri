@@ -41,6 +41,10 @@ public class BassActivity extends Activity implements SensorEventListener {
     private SoundPool soundPool;
     private int soundId;
 
+    private SoundPool tuneSoundPool;
+    private int tuneSoundId;
+    private long tuneMillis = 0;
+
     private int maxVolume;
     private int currentVolume = 0;
 
@@ -63,7 +67,7 @@ public class BassActivity extends Activity implements SensorEventListener {
 
         this.startTimeTextView.setText("5秒から開始！！");
 
-        this.mediaPlayer = MediaPlayer.create(this, R.raw.bass);
+        this.mediaPlayer = MediaPlayer.create(this, R.raw.guitar_and_base);
         try{
             this.mediaPlayer.prepare();
             this.mediaPlayer.setLooping(true);
@@ -101,6 +105,9 @@ public class BassActivity extends Activity implements SensorEventListener {
         // 予め音声データを読み込む
         this.soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
         this.soundId = this.soundPool.load(getApplicationContext(), R.raw.climax, 0);
+
+        this.tuneSoundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+        this.tuneSoundId = this.tuneSoundPool.load(getApplicationContext(), R.raw.bass_tune, 0);
     }
 
     @Override
@@ -119,8 +126,8 @@ public class BassActivity extends Activity implements SensorEventListener {
     public void play(View view) {
 
         if (this.mediaPlayer.isPlaying()) {
-            this.mediaPlayer.pause();
-            this.playButton.setText("Play");
+            // this.mediaPlayer.pause();
+            // this.playButton.setText("Play");
         } else {
             this.mediaPlayer.start();
             this.playButton.setText("Stop");
@@ -133,6 +140,14 @@ public class BassActivity extends Activity implements SensorEventListener {
         if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
             if(this.x > 15 || this.x < -15) {
+
+                if(!this.mediaPlayer.isPlaying()) {
+                    if (System.currentTimeMillis() - this.tuneMillis > 4000) {
+                        this.tuneSoundPool.play(this.tuneSoundId, 1.0F, 1.0F, 0, 0, 1.0F);
+                        this.tuneMillis = System.currentTimeMillis();
+                    }
+                }
+
                 count = 0; // 停止カウントをリセット
                 if(this.currentVolume == 0) {
                     Log.i(TAG, "Play");

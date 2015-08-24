@@ -39,6 +39,10 @@ public class DrumActivity extends Activity implements SensorEventListener {
     private SoundPool soundPool;
     private int soundId;
 
+    private SoundPool tuneSoundPool;
+    private int tuneSoundId;
+    private long tuneMillis = 0;
+
     private int maxVolume;
     private int currentVolume = 0;
 
@@ -109,6 +113,9 @@ public class DrumActivity extends Activity implements SensorEventListener {
         // 予め音声データを読み込む
         this.soundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
         this.soundId = this.soundPool.load(getApplicationContext(), R.raw.climax, 0);
+
+        this.tuneSoundPool = new SoundPool(1, AudioManager.STREAM_MUSIC, 0);
+        this.tuneSoundId = this.tuneSoundPool.load(getApplicationContext(), R.raw.drum_tune, 0);
     }
 
     @Override
@@ -127,13 +134,11 @@ public class DrumActivity extends Activity implements SensorEventListener {
     public void play(View view) {
 
         if (this.mediaPlayer.isPlaying()) {
-            this.mediaPlayer.pause();
-            this.playButton.setText("Play");
+            // this.mediaPlayer.pause();
+            // this.playButton.setText("Play");
         } else {
             this.mediaPlayer.start();
             this.playButton.setText("Stop");
-            Toast.makeText(this, "盛り上がってきたー", Toast.LENGTH_SHORT).show();
-            this.soundPool.play(this.soundId, 1.0F, 1.0F, 0, 0, 1.0F);
         }
     }
 
@@ -142,30 +147,37 @@ public class DrumActivity extends Activity implements SensorEventListener {
         this.x = event.values[0];
         if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
-            if(this.x > 19 || this.x < -19) {
-                this.oldClimaxMillis = this.climaxMillis;
-                this.climaxMillis = System.currentTimeMillis();
+            if(this.x > 15 || this.x < -15) {
 
-                if ((this.climaxMillis - this.oldClimaxMillis) < 100) {
-                    if (++climaxCount > 10) {
-                        if(System.currentTimeMillis() - this.climaxTimeMillis > 4000) {
-                            Toast.makeText(this, "盛り上がってきたー", Toast.LENGTH_SHORT).show();
-                            this.soundPool.play(this.soundId, 1.0F, 1.0F, 0, 0, 1.0F);
-                            this.climaxTimeMillis = System.currentTimeMillis();
-                            climaxCount = 0;
-                        }
+                if(!this.mediaPlayer.isPlaying()) {
+                    if (System.currentTimeMillis() - this.tuneMillis > 4000) {
+                        this.tuneSoundPool.play(this.tuneSoundId, 1.0F, 1.0F, 0, 0, 1.0F);
+                        this.tuneMillis = System.currentTimeMillis();
                     }
-                } else {
+                }
+
+                if(this.x > 19 || this.x < -19) {
+                    this.oldClimaxMillis = this.climaxMillis;
+                    this.climaxMillis = System.currentTimeMillis();
+
+                    if ((this.climaxMillis - this.oldClimaxMillis) < 100) {
+                        if (++climaxCount > 10) {
+                            if(System.currentTimeMillis() - this.climaxTimeMillis > 4000) {
+                                Toast.makeText(this, "盛り上がってきたー", Toast.LENGTH_SHORT).show();
+                                this.soundPool.play(this.soundId, 1.0F, 1.0F, 0, 0, 1.0F);
+                                this.climaxTimeMillis = System.currentTimeMillis();
+                                climaxCount = 0;
+                            }
+                        }
+                    } else {
+                        climaxCount = 0;
+                    }
+                }
+                if(climaxCount > 10) {
                     climaxCount = 0;
                 }
-            }
-            if(climaxCount > 10) {
-                climaxCount = 0;
-            }
-            Log.i("climax", Integer.toString(climaxCount));
+                Log.i("climax", Integer.toString(climaxCount));
 
-
-            if(this.x > 15 || this.x < -15) {
                 count = 0; // 停止カウントをリセット
                 if(this.currentVolume == 0) {
                     Log.i(TAG, "Play");
